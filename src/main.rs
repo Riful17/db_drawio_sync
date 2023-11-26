@@ -2,6 +2,21 @@
 
 use eframe::egui;
 use egui_logger;
+use mysql::*;
+use mysql::prelude::*;
+
+#[derive(Debug, PartialEq, Eq)]
+struct TableStructure {
+    field: String,
+    // r#type: Option<String>,
+    collation: String,
+    // null: Option<String>,
+    // key: Option<String>,
+    // default: Option<String>,
+    // extra: Option<String>,
+    // privileges: Option<String>,
+    // comment: Option<String>,
+}
 
 #[derive(Default)]
 struct MyApp {
@@ -49,6 +64,7 @@ impl eframe::App for MyApp {
                     .labelled_by(table_element_label.id);
             });
             if ui.button("Run").clicked() {
+                db_query().unwrap();
                 log::info!("Info button Run pressed {} {} {}", self.db_conn, self.table_header, self.table_element);
             }
         });
@@ -58,3 +74,62 @@ impl eframe::App for MyApp {
         });
     }
 }
+
+
+pub fn db_query() -> std::result::Result<(), Box<dyn std::error::Error>> {
+    log::trace!("db_query ...");
+    let url = "mysql://root:some_dev_password@94.19.108.70:3306/catalog";
+    let pool = Pool::new(url)?;
+
+    log::trace!("pool.get_conn ...");
+    let mut conn = pool.get_conn()?;
+    log::trace!("pool.get_conn done");
+
+    log::trace!("conn.query: {}", "SHOW DATABASES;");
+    let dbs: Vec<String> = conn.query("SHOW DATABASES;")?;
+    log::info!("Databases: {:?}", dbs);
+
+    for db_name in dbs {
+        log::trace!("db: {}", db_name);
+        log::trace!("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{}'", db_name);
+        let tables: Vec<String> = conn.query(format!("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{}'", db_name))?;
+        log::info!("Database: {} Tables {:?}", db_name, tables);
+        for table_name in tables {
+            log::warn!("NOT IMPLEMENTED SHOW FULL COLUMNS FROM {}.{};",db_name, table_name);
+            // let fields = conn
+            //     .query_map(format!("SHOW FULL COLUMNS FROM {}.{}",db_name, table_name),
+            //                |(field, r#type, collation, null, key, default, extra, privileges, comment)| {
+            //     TableStructure { field, r#type, collation, null, key, default, extra, privileges , comment  }
+            // })?;
+
+            // for field in fields {
+            //     log::info!("{}.{}.{}",db_name, table_name, field.field);
+            // }
+        }
+    }
+
+
+    // let val: Option<String> = conn.query_first("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'catalog'")?;
+    // log::info!("{:?}", val);
+    //
+    // let val: Option<String> = conn.query_first("SHOW FULL COLUMNS FROM catalog.manager;")?;
+    // log::info!("{:?}", val);
+
+    // wrong struct for mappings
+    // let selected_payments = conn
+    //     .query_map(
+    //         "SELECT * from devices",
+    //         |(title, uuid, state)| {
+    //            Devices { title, uuid, state }
+    //         },
+    //     )?;
+    //
+    // for dev in selected_payments {
+    //     log::info!("{:?} {:?} {:?}", dev.title, dev.uuid, dev.state);
+    // }
+
+    log::info!("db_query done");
+
+    Ok(())
+}
+
