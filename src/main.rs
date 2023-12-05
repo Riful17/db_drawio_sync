@@ -1,135 +1,136 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
-
-use eframe::egui;
-use egui_logger;
-use mysql::*;
-use mysql::prelude::*;
-
-#[derive(Debug, PartialEq, Eq)]
-struct TableStructure {
-    field: String,
-    // r#type: Option<String>,
-    collation: String,
-    // null: Option<String>,
-    // key: Option<String>,
-    // default: Option<String>,
-    // extra: Option<String>,
-    // privileges: Option<String>,
-    // comment: Option<String>,
-}
-
-#[derive(Default)]
-struct MyApp {
-    db_conn: String,
-    table_header: String,
-    table_element: String,
-}
+use sqlparser::dialect;
+use sqlparser::parser::Parser;
+use chrono::Local;
+use log::*;
+use std::fs::File;
+use std::io::Write;
 
 fn main() {
+    let target = Box::new(File::create("app.log").expect("Can't create file"));
 
-    egui_logger::init_with_max_level(log::LevelFilter::Debug).expect("Error initializing logger");
+    env_logger::Builder::new()
+        .target(env_logger::Target::Pipe(target))
+        .filter(None, LevelFilter::Debug)
+        .format(|buf, record| {
+            writeln!(
+                buf,
+                "[{} {} {}:{}] {}",
+                Local::now().format("%Y-%m-%d %H:%M:%S%.3f"),
+                record.level(),
+                record.file().unwrap_or("unknown"),
+                record.line().unwrap_or(0),
+                record.args(),
+            )
+        }).init();
 
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().
-            with_inner_size([460.0, 240.0]).
-            with_position([400.0,400.0]),
-        ..Default::default()
-    };
+    debug!("debug line");
 
-    eframe::run_native(
-        "DB DrawIO Sync",
-        options,
-        Box::new(|_cc| Box::new(MyApp::default())),
-    ).unwrap();
-}
+    info!("Hello world");
+    info!("Hello world");
+    info!("Hello world");
+    info!("Hello world");
+
+    let sql_comment = "/*
+ Navicat Premium Data Transfer
+
+ Source Server         : VM_MariaDB
+ Source Server Type    : MariaDB
+ Source Server Version : 110003 (11.0.3-MariaDB)
+ Source Host           : 94.19.108.70:3306
+ Source Schema         : catalog
+
+ Target Server Type    : MariaDB
+ Target Server Version : 110003 (11.0.3-MariaDB)
+ File Encoding         : 65001
+
+ Date: 05/12/2023 00:51:28
+*/
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+-- Table structure for entrances
+-- ----------------------------
+DROP TABLE IF EXISTS `entrances`;
+CREATE TABLE `entrances` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `uuid` uuid DEFAULT NULL,
+  `number` varchar(255) DEFAULT NULL COMMENT 'just some comment',
+  `description` varchar(255) DEFAULT NULL,
+  `house_id` bigint(20) DEFAULT NULL,
+  `created_at` datetime(3) DEFAULT NULL,
+  `updated_at` datetime(3) DEFAULT NULL,
+  `external_uuid` uuid DEFAULT NULL,
+  `address` varchar(255) DEFAULT NULL,
+  `count_floor` bigint(20) DEFAULT NULL,
+  `count_flat` bigint(20) DEFAULT NULL,
+  `count_pantries` bigint(20) DEFAULT NULL,
+  `count_elevator` bigint(20) DEFAULT NULL,
+  `count_ventilation` bigint(20) DEFAULT NULL,
+  `count_fire_safety` bigint(20) DEFAULT NULL,
+  `count_intercom` bigint(20) DEFAULT NULL,
+  `count_camera` bigint(20) DEFAULT NULL,
+  `count_controller` bigint(20) DEFAULT NULL,
+  `count_sensor` bigint(20) DEFAULT NULL,
+  `count_counter` bigint(20) DEFAULT NULL,
+  `count_router` bigint(20) DEFAULT NULL,
+  `count_subscriber` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=152 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
+
+SET FOREIGN_KEY_CHECKS = 1;
+";
 
 
-impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("DB conn");
-            ui.horizontal(|ui| {
-                let db_conn_label = ui.label("DB conn: ");
-                ui.text_edit_singleline(&mut self.db_conn)
-                    .labelled_by(db_conn_label.id);
-            });
-            ui.horizontal(|ui| {
-                let table_header_label = ui.label("Table header: ");
-                ui.text_edit_multiline(&mut self.table_header)
-                    .labelled_by(table_header_label.id);
-            });
-            ui.horizontal(|ui| {
-                let table_element_label = ui.label("Table element: ");
-                ui.text_edit_multiline(&mut self.table_element)
-                    .labelled_by(table_element_label.id);
-            });
-            if ui.button("Run").clicked() {
-                db_query().unwrap();
-                log::info!("Info button Run pressed {} {} {}", self.db_conn, self.table_header, self.table_element);
+
+    let _sql = "DROP TABLE IF EXISTS `access_keys`;
+CREATE TABLE `access_keys` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `uuid` uuid DEFAULT NULL,
+  `created_at` datetime(3) DEFAULT NULL,
+  `updated_at` datetime(3) DEFAULT NULL,
+  `enter_type` varchar(256) DEFAULT NULL,
+  `comment` varchar(256) DEFAULT NULL,
+  `alias` varchar(256) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ----------------------------
+-- Table structure for account_config
+-- ----------------------------
+DROP TABLE IF EXISTS `account_config`;
+CREATE TABLE `account_config` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `uuid` uuid DEFAULT NULL,
+  `created_at` datetime(3) DEFAULT NULL,
+  `updated_at` datetime(3) DEFAULT NULL,
+  `account_id` varchar(256) DEFAULT NULL,
+  `account_config_id` varchar(256) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1901 DEFAULT CHARSET=utf8mb4;
+";
+
+    let dialect = dialect::GenericDialect{};
+    let res = Parser::parse_sql(&dialect, sql_comment).unwrap();
+
+    for statement in res {
+        match statement {
+            sqlparser::ast::Statement::CreateTable { name, columns, .. } => {
+                for each_name in name.0 {
+                    debug!("Table each_name: {:?}", each_name.value);
+                }
+                // debug!("Table: {:?}", name);
+                for column_def in columns {
+                    debug!("Column: {}, Type: {}", column_def.name.value, column_def.data_type);
+                    for opt in &column_def.options {
+                        if opt.name.is_none() {
+                            continue;
+                        }
+                        debug!("  Option: {:?} = {:?}", opt.name.clone().unwrap().value, opt.option);
+                    }
+                }
             }
-        });
-
-        egui::Window::new("Log").show(ctx, |ui| {
-            egui_logger::logger_ui(ui);
-        });
-    }
-}
-
-
-pub fn db_query() -> std::result::Result<(), Box<dyn std::error::Error>> {
-    log::trace!("db_query ...");
-    let url = "mysql://root:some_dev_password@94.19.108.70:3306/catalog";
-    let pool = Pool::new(url)?;
-
-    log::trace!("pool.get_conn ...");
-    let mut conn = pool.get_conn()?;
-    log::trace!("pool.get_conn done");
-
-    log::trace!("conn.query: {}", "SHOW DATABASES;");
-    let dbs: Vec<String> = conn.query("SHOW DATABASES;")?;
-    log::info!("Databases: {:?}", dbs);
-
-    for db_name in dbs {
-        log::trace!("db: {}", db_name);
-        log::trace!("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{}'", db_name);
-        let tables: Vec<String> = conn.query(format!("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{}'", db_name))?;
-        log::info!("Database: {} Tables {:?}", db_name, tables);
-        for table_name in tables {
-            log::warn!("NOT IMPLEMENTED SHOW FULL COLUMNS FROM {}.{};",db_name, table_name);
-            // let fields = conn
-            //     .query_map(format!("SHOW FULL COLUMNS FROM {}.{}",db_name, table_name),
-            //                |(field, r#type, collation, null, key, default, extra, privileges, comment)| {
-            //     TableStructure { field, r#type, collation, null, key, default, extra, privileges , comment  }
-            // })?;
-
-            // for field in fields {
-            //     log::info!("{}.{}.{}",db_name, table_name, field.field);
-            // }
+            _ => {}
         }
-    }
-
-
-    // let val: Option<String> = conn.query_first("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'catalog'")?;
-    // log::info!("{:?}", val);
-    //
-    // let val: Option<String> = conn.query_first("SHOW FULL COLUMNS FROM catalog.manager;")?;
-    // log::info!("{:?}", val);
-
-    // wrong struct for mappings
-    // let selected_payments = conn
-    //     .query_map(
-    //         "SELECT * from devices",
-    //         |(title, uuid, state)| {
-    //            Devices { title, uuid, state }
-    //         },
-    //     )?;
-    //
-    // for dev in selected_payments {
-    //     log::info!("{:?} {:?} {:?}", dev.title, dev.uuid, dev.state);
-    // }
-
-    log::info!("db_query done");
-
-    Ok(())
-}
-
+    }}
