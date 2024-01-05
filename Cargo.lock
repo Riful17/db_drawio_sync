@@ -87,6 +87,7 @@ dependencies = [
  "env_logger",
  "log",
  "sqlparser",
+ "xmltree",
 ]
 
 [[package]]
@@ -268,9 +269,9 @@ dependencies = [
 
 [[package]]
 name = "sqlparser"
-version = "0.40.0"
+version = "0.41.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c80afe31cdb649e56c0d9bb5503be9166600d68a852c38dd445636d126858e5"
+checksum = "5cc2c25a6c66789625ef164b4c7d2e548d627902280c13710d33da8222169964"
 dependencies = [
  "log",
 ]
@@ -526,3 +527,18 @@ name = "windows_x86_64_msvc"
 version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dff9641d1cd4be8d1a070daf9e3773c5f67e78b4d9d42263020c057706765c04"
+
+[[package]]
+name = "xml-rs"
+version = "0.8.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fcb9cbac069e033553e8bb871be2fbdffcab578eb25bd0f7c508cedc6dcd75a"
+
+[[package]]
+name = "xmltree"
+version = "0.10.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d7d8a75eaf6557bb84a65ace8609883db44a29951042ada9b393151532e41fcb"
+dependencies = [
+ "xml-rs",
+]

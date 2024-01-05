@@ -6,7 +6,8 @@ edition = "2021"
 rust-version = "1.73"
 
 [dependencies]
-sqlparser = "0.40.0"
+sqlparser = "0.41.0"
 log = { version = "0.4.20", features = [] }
 env_logger = "0.10.1"
 chrono = "0.4.31"
+xmltree = "0.10.3"

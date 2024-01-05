@@ -1,11 +1,63 @@
-use sqlparser::dialect;
-use sqlparser::parser::Parser;
 use chrono::Local;
 use log::*;
+use sqlparser::dialect;
+use sqlparser::parser::Parser;
 use std::fs::File;
-use std::io::Write;
+use std::io::{Write};
+use xmltree::Element;
 
 fn main() {
+    let data: &str = r##"
+<mxfile host="Electron" modified="2024-01-02T23:57:44.669Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/22.1.2 Chrome/114.0.5735.289 Electron/25.9.4 Safari/537.36" etag="VsMo5dle4Q90sCNxzw9a" version="22.1.2" type="device">
+  <diagram name="Page-1" id="a7904f86-f2b4-8e86-fa97-74104820619b">
+    <mxGraphModel dx="954" dy="616" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" background="none" math="0" shadow="0">
+      <root>
+
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="table.entrances.header" value="entrances" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;expand=0;" parent="1" vertex="1">
+          <mxGeometry width="330" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="table.entrances.field.id" value="`id` [PK] bigint(20) NOT NULL AUTO_INCREMENT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="table.entrances.header" vertex="1">
+          <mxGeometry y="30" width="330" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="table.entrances.field.uuid" value="`uuid` uuid DEFAULT NULL" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="table.entrances.header" vertex="1">
+          <mxGeometry y="60" width="330" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="table.entrances.field.created_at" value="`created_at` datetime(3) DEFAULT NULL" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="table.entrances.header" vertex="1">
+          <mxGeometry y="90" width="330" height="30" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
+"##;
+
+    let mut names_element = Element::parse(data.as_bytes()).unwrap();
+
+    println!("{:#?}", names_element);
+    {
+        // get first `name` element
+        // let name = names_element
+        //     .get_mut_child("name")
+        //     .expect("Can't find name element");
+        // name.attributes.insert("suffix".to_owned(), "mr".to_owned());
+    }
+
+    names_element
+        .write_with_config(
+            File::create("../result.drawio").unwrap(),
+            xmltree::EmitterConfig::new()
+                .write_document_declaration(false)
+                .perform_indent(true),
+        )
+        .expect("TODO: panic message");
+
     let target = Box::new(File::create("app.log").expect("Can't create file"));
 
     env_logger::Builder::new()
@@ -21,13 +73,11 @@ fn main() {
                 record.line().unwrap_or(0),
                 record.args(),
             )
-        }).init();
+        })
+        .init();
 
     debug!("debug line");
 
-    info!("Hello world");
-    info!("Hello world");
-    info!("Hello world");
     info!("Hello world");
 
     let sql_comment = "/*
@@ -82,8 +132,6 @@ CREATE TABLE `entrances` (
 SET FOREIGN_KEY_CHECKS = 1;
 ";
 
-
-
     let _sql = "DROP TABLE IF EXISTS `access_keys`;
 CREATE TABLE `access_keys` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
@@ -111,26 +159,31 @@ CREATE TABLE `account_config` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1901 DEFAULT CHARSET=utf8mb4;
 ";
 
-    let dialect = dialect::GenericDialect{};
+    let dialect = dialect::GenericDialect {};
     let res = Parser::parse_sql(&dialect, sql_comment).unwrap();
 
     for statement in res {
-        match statement {
-            sqlparser::ast::Statement::CreateTable { name, columns, .. } => {
-                for each_name in name.0 {
-                    debug!("Table each_name: {:?}", each_name.value);
-                }
-                // debug!("Table: {:?}", name);
-                for column_def in columns {
-                    debug!("Column: {}, Type: {}", column_def.name.value, column_def.data_type);
-                    for opt in &column_def.options {
-                        if opt.name.is_none() {
-                            continue;
-                        }
-                        debug!("  Option: {:?} = {:?}", opt.name.clone().unwrap().value, opt.option);
+        if let sqlparser::ast::Statement::CreateTable { name, columns, .. } = statement {
+            for each_name in name.0 {
+                debug!("Table each_name: {:?}", each_name.value);
+            }
+            // debug!("Table: {:?}", name);
+            for column_def in columns {
+                debug!(
+                    "Column: {}, Type: {}",
+                    column_def.name.value, column_def.data_type
+                );
+                for opt in &column_def.options {
+                    if opt.name.is_none() {
+                        continue;
                     }
+                    debug!(
+                        "  Option: {:?} = {:?}",
+                        opt.name.clone().unwrap().value,
+                        opt.option
+                    );
                 }
             }
-            _ => {}
         }
-    }}
+    }
+}
